@@ -40,7 +40,7 @@ node app.js
 
 ## 开发流程
 
-1、先匹配路由
-2、在对应的controller中写接口逻辑
-3、在model中写需要读取的数据操作，尽量遵循crud的原则
-4、在controller中，将读取的数据，通过utils提供的工具函数统一的发送出去，参考users.js
+1. 先匹配路由
+2. 在对应的controller中写接口逻辑
+3. 在model中写需要读取的数据操作，尽量遵循crud的原则
+4. 在controller中，将读取的数据，通过utils提供的工具函数统一的发送出去，参考users.js
