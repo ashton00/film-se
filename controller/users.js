@@ -47,6 +47,7 @@ exports.register = function register(req, res, next) {
 };
 
 exports.login = function login(req, res, next) {
+    //  同样需要加盐
     var [phone, password] = [req.body.phone, utils.sha1(req.body.password)];
     usersModel.login(phone, password, function(err, dbres, fields) {
         if(err) {
