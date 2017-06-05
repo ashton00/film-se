@@ -1,5 +1,5 @@
 
-## Run
+## 一、运行
 
 ### install
 
@@ -12,13 +12,13 @@ npm install
 需要修改在 Config 目录下面，配置 config.js 的 `mysql` 配置
 
 
-### 运行
+### 开启程序
 
 ```
 node app.js
 ```
 
-## 架构
+## 二、架构
 
 ### controller
 
@@ -38,7 +38,7 @@ node app.js
 
 提供数据库操作，错误处理，发送数据到前端，还有sha1加密等工具函数
 
-## 开发流程
+## 三、开发流程
 
 1. 先匹配路由
 2. 在对应的controller中写接口逻辑
