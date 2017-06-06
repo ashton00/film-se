@@ -4,7 +4,7 @@ var favicon = require('serve-favicon');
 var logger = require('morgan');
 var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
-
+var allRoutes = require('./routes/allRoutes.js')
 var routes = require('./routes/index');
 var users = require('./routes/users');
 
@@ -24,6 +24,9 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/', routes);
 app.use('/api/users', users);
+
+//如果所有路由都匹配失败
+app.use('*', allRoutes.handleNotMatch);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
