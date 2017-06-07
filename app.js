@@ -6,8 +6,8 @@ var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
 var allRoutes = require('./routes/allRoutes.js')
 var routes = require('./routes/index');
-var users = require('./routes/users');
-
+var users = require('./routes/users.js');
+var films = require('./routes/films.js')
 var app = express();
 
 // view engine setup
@@ -24,6 +24,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/', routes);
 app.use('/api/users', users);
+app.use('/api/films', films);
 
 //如果所有路由都匹配失败
 app.use('*', allRoutes.handleNotMatch);
