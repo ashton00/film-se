@@ -50,11 +50,16 @@ exports.create = function create(name, showTime, score, area, description, img, 
     description = description || "暂无评论";
     type = type || "暂无类型";
     year = year || 2017;
+
     if(!comments) // 如果 comments 为空
-        comments = JSON.Stringify(['暂无评论']);
+        comments = JSON.stringify(['暂无评论']);
+    else
+        comments = JSON.stringify(comments);
 
     if(!actors) // 如果 actors 为空
-        actors = JSON.Stringify(['暂无演员']);
+        actors = JSON.stringify(['暂无演员']);
+    else
+        actors = JSON.stringify(actors);
 
 
     const sql = '' +

@@ -13,6 +13,7 @@ exports.retriveOneFilm = function retriveOneFilm(req, res, next) {
 
         if(dbres && dbres.length != 0) {
             var film  = dbres[0];
+            console.log(film.Actors);
             var data = {
                 'id'    : film.FilmId,
                 'name'  : film.Name,
