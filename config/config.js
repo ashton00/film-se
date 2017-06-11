@@ -1,7 +1,7 @@
 
 
 exports.mysql = {
-    host: '119.29.3.57',
+    host: '****',
     user: '****',
     password: '****',
     database: 'film'
