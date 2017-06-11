@@ -261,6 +261,374 @@ app.param('id', function (req, res, next, id) {
   next();
 })
 
+http.createServer(app).listen(80);
+https.createServer(options, app).listen(443);
+The app.listen() method is a convenience method for the following (for HTTP only):
+
+app.listen = function() {
+  var server = http.createServer(this);
+  return server.listen.apply(server, arguments);
+};
+app.METHOD(path, callback [, callback ...])
+Routes an HTTP request, where METHOD is the HTTP method of the request, such as GET, PUT, POST, and so on, in lowercase. Thus, the actual methods are app.get(), app.post(), app.put(), and so on. See below for the complete list.
+
+For more information, see the routing guide.
+
+Express supports the following routing methods corresponding to the HTTP methods of the same names:
+
+checkout
+connect
+copy
+delete
+get
+head
+lock
+merge
+mkactivity
+mkcol
+move
+m-search
+notify
+options
+patch
+post
+propfind
+proppatch
+purge
+
+CALLED ONLY ONCE
+although this matches
+and this matches too
+app.param(['id', 'page'], function (req, res, next, value) {
+  console.log('CALLED ONLY ONCE with', value);
+  next();
+})
+
+app.get('/user/:id/:page', function (req, res, next) {
+  console.log('although this matches');
+  next();
+});
+
+app.get('/user/:id/:page', function (req, res) {
+  console.log('and this matches too');
+  res.end();
+});
+On GET /user/42/3, the following is printed:
+
+CALLED ONLY ONCE with 42
+CALLED ONLY ONCE with 3
+although this matches
+and this matches too
+The following section describes app.param(callback), which is deprecated as of v4.11.0.
+The behavior of the app.param(name, callback) method can be altered entirely by passing only a function to app.param(). This function is a custom implementation of how app.param(name, callback) should behave - it accepts two parameters and must return a middleware.
+
+The first parameter of this function is the name of the URL parameter that should be captured, the second parameter can be any JavaScript object which might be used for returning the middleware implementation.
+
+The middleware returned by the function decides the behavior of what happens when a URL parameter is captured.
+
+In this example, the app.param(name, callback) signature is modified to app.param(name, accessId). Instead of accepting a name and a callback, app.param() will now accept a name and a number.
+
+var express = require('express');
+var app = express();
+
+// customizing the behavior of app.param()
+app.param(function(param, option) {
+  return function (req, res, next, val) {
+    if (val == option) {
+      next();
+    }
+    else {
+      res.sendStatus(403);
+    }
+  }
+});
+
+// using the customized app.param()
+app.param('id', 1337);
+
+// route to trigger the capture
+app.get('/user/:id', function (req, res) {
+  res.send('OK');
+})
+
+app.listen(3000, function () {
+  console.log('Ready');
+})
+In this example, the app.param(name, callback) signature remains the same, but instead of a middleware callback, a custom data type checking function has been defined to validate the data type of the user id.
+
+app.param(function(param, validator) {
+  return function (req, res, next, val) {
+    if (validator(val)) {
+      next();
+    }
+    else {
+      res.sendStatus(403);
+    }
+  }
+})
+
+app.param('id', function (candidate) {
+  return !isNaN(parseFloat(candidate)) && isFinite(candidate);
+});
+The ¡®.¡¯ character can¡¯t be used to capture a character in your capturing regexp. For example you can¡¯t use '/user-.+/' to capture 'users-gami', use [\\s\\S] or [\\w\\W] instead (as in '/user-[\\s\\S]+/'.
+
+Examples:
+
+//captures '1-a_6' but not '543-azser-sder'
+router.get('/[0-9]+-[[\\w]]*', function); 
+
+//captures '1-a_6' and '543-az(ser"-sder' but not '5-a s'
+router.get('/[0-9]+-[[\\S]]*', function); 
+
+//captures all (equivalent to '.*')
+router.get('[[\\s\\S]]*', function); 
+app.path()
+Returns the canonical path of the app, a string.
+
+var app = express()
+  , blog = express()
+  , blogAdmin = express();
+
+app.use('/blog', blog);
+blog.use('/admin', blogAdmin);
+
+console.log(app.path()); // ''
+console.log(blog.path()); // '/blog'
+console.log(blogAdmin.path()); // '/blog/admin'
+The behavior of this method can become very complicated in complex cases of mounted apps: it is usually better to use req.baseUrl to get the canonical path of the app.
+
+app.post(path, callback [, callback ...])
+Routes HTTP POST requests to the specified path with the specified callback functions. For more information, see the routing guide.
+
+You can provide multiple callback functions that behave just like middleware, except that these callbacks can invoke next('route') to bypass the remaining route callback(s). You can use this mechanism to impose pre-conditions on a route, then pass control to subsequent routes if there¡¯s no reason to proceed with the current route.
+
+app.post('/', function (req, res) {
+  res.send('POST request to homepage');
+});
+app.put(path, callback [, callback ...])
+Routes HTTP PUT requests to the specified path with the specified callback functions. For more information, see the routing guide.
+
+You can provide multiple callback functions that behave just like middleware, except that these callbacks can invoke next('route') to bypass the remaining route callback(s). You can use this mechanism to impose pre-conditions on a route, then pass control to subsequent routes if there¡¯s no reason to proceed with the current route.
+
+app.put('/', function (req, res) {
+  res.send('PUT request to homepage');
+});
+app.render(view, [locals], callback)
+Returns the rendered HTML of a view via the callback function. It accepts an optional parameter that is an object containing local variables for the view. It is like res.render(), except it cannot send the rendered view to the client on its own.
+
+Think of app.render() as a utility function for generating rendered view strings. Internally res.render() uses app.render() to render views.
+The local variable cache is reserved for enabling view cache. Set it to true, if you want to cache view during development; view caching is enabled in production by default.
+app.render('email', function(err, html){
+  // ...
+});
+
+app.render('email', { name: 'Tobi' }, function(err, html){
+  // ...
+});
+app.route(path)
+Returns an instance of a single route, which you can then use to handle HTTP verbs with optional middleware. Use app.route() to avoid duplicate route names (and thus typo errors).
+
+var app = express();
+
+app.route('/events')
+.all(function(req, res, next) {
+  // runs for all HTTP verbs first
+  // think of it as route specific middleware!
+})
+.get(function(req, res, next) {
+  res.json(...);
+})
+.post(function(req, res, next) {
+  // maybe add a new event...
+})
+app.set(name, value)
+Assigns setting name to value, where name is one of the properties from the app settings table.
+
+Calling app.set('foo', true) for a Boolean property is the same as calling app.enable('foo'). Similarly, calling app.set('foo', false) for a Boolean property is the same as calling app.disable('foo').
+
+Retrieve the value of a setting with app.get().
+
+app.set('title', 'My Site');
+app.get('title'); // "My Site"
+Application Settings
+
+If name is one of the application settings, it affects the behavior of the application. The following table lists application settings.
+
+Property	Type	Value	Default
+case sensitive routing
+
+Boolean	Enable case sensitivity.	Disabled. Treats "/Foo" and "/foo" as the same.
+env
+
+String	Environment mode.	
+process.env.NODE_ENV (NODE_ENV environment variable) or ¡°development¡±.
+
+etag
+
+Varied	
+Set the ETag response header. For possible values, see the etag options table.
+
+More about the HTTP ETag header.
+
+jsonp callback name
+
+String	Specifies the default JSONP callback name.	
+?callback=
+
+json replacer
+
+String	JSON replacer callback.	
+null
+
+json spaces
+
+Number	When set, sends prettified JSON string indented with the specified amount of spaces.	Disabled.
+query parser
+
+String	
+The query parser to use, either ¡°simple¡± or ¡°extended¡±. The simple query parser is based on Node¡¯s native query parser, querystring. The extended query parser is based on qs.
+
+"extended"
+strict routing
+
+Boolean	Enable strict routing.	Disabled. Treats "/foo" and "/foo/" as the same by the router.
+subdomain offset
+
+Number	The number of dot-separated parts of the host to remove to access subdomain.	2
+trust proxy
+
+Varied	
+Indicates the app is behind a front-facing proxy, and to use the X-Forwarded-* headers to determine the connection and the IP address of the client. NOTE: X-Forwarded-* headers are easily spoofed and the detected IP addresses are unreliable.
+
+trust proxy is disabled by default. When enabled, Express attempts to determine the IP address of the client connected through the front-facing proxy, or series of proxies. The req.ips property, then, contains an array of IP addresses the client is connected through. To enable it, use the values described in the trust proxy options table.
+
+The trust proxy setting is implemented using the proxy-addr package. For more information, see its documentation.
+
+Disabled.
+views
+
+String or Array	A directory or an array of directories for the application's views. If an array, the views are looked up in the order they occur in the array.	
+process.cwd() + '/views'
+
+view cache
+
+Boolean	Enables view template compilation caching.	
+true in production.
+
+view engine
+
+String	The default engine extension to use when omitted.	
+x-powered-by
+
+Boolean	Enables the "X-Powered-By: Express" HTTP header.	
+true
+
+Options for `trust proxy` setting
+
+Type	Value
+Boolean	
+If true, the client¡¯s IP address is understood as the left-most entry in the X-Forwarded-* header.
+
+If false, the app is understood as directly facing the Internet and the client¡¯s IP address is derived from req.connection.remoteAddress. This is the default setting.
+
+IP addresses	
+An IP address, subnet, or an array of IP addresses, and subnets to trust. The following is the list of pre-configured subnet names.
+
+loopback - 127.0.0.1/8, ::1/128
+linklocal - 169.254.0.0/16, fe80::/10
+uniquelocal - 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, fc00::/7
+Set IP addresses in any of the following ways:
+
+app.set('trust proxy', 'loopback') // specify a single subnet
+  app.set('trust proxy', 'loopback, 123.123.123.123') // specify a subnet and an address
+  app.set('trust proxy', 'loopback, linklocal, uniquelocal') // specify multiple subnets as CSV
+  app.set('trust proxy', ['loopback', 'linklocal', 'uniquelocal']) // specify multiple subnets as an array
+When specified, the IP addresses or the subnets are excluded from the address determination process, and the untrusted IP address nearest to the application server is determined as the client¡¯s IP address.
+
+Number	
+Trust the nth hop from the front-facing proxy server as the client.
+
+Function	
+Custom trust implementation. Use this only if you know what you are doing.
+
+app.set('trust proxy', function (ip) {
+    if (ip === '127.0.0.1' || ip === '123.123.123.123') return true; // trusted IPs
+    else return false;
+  })
+Options for `etag` setting
+
+Type	Value
+Boolean	
+true enables weak ETag. This is the default setting.
+false disables ETag altogether.
+
+String	If "strong", enables strong ETag.
+If "weak", enables weak ETag.
+Function	
+Custom ETag function implementation. Use this only if you know what you are doing.
+
+app.set('etag', function (body, encoding) {
+  return generateHash(body, encoding); // consider the function is defined
+  })
+app.use([path,] function [, function...])
+Mounts the middleware function(s) at the path. If path is not specified, it defaults to ¡°/¡±.
+
+A route will match any path, which follows its path immediately with a ¡°/¡±. For example: app.use('/apple', ...) will match ¡°/apple¡±, ¡°/apple/images¡±, ¡°/apple/images/news¡±, and so on.
+req.originalUrl in a middleware is a combination of req.baseUrl and req.path, as shown in the following example.
+
+app.use('/admin', function(req, res, next) {
+  // GET 'http://www.example.com/admin/new'
+  console.log(req.originalUrl); // '/admin/new'
+  console.log(req.baseUrl); // '/admin'
+  console.log(req.path); // '/new'
+  next();
+});
+Mounting a middleware at a path will cause the middleware function to be executed whenever the base of the requested path matches the path.
+
+Since path defaults to ¡°/¡±, middleware mounted without a path will be executed for every request to the app.
+
+// this middleware will be executed for every request to the app
+app.use(function (req, res, next) {
+  console.log('Time: %d', Date.now());
+  next();
+})
+Middleware functions are executed sequentially, therefore the order of middleware inclusion is important.
+
+// this middleware will not allow the request to go beyond it
+app.use(function(req, res, next) {
+  res.send('Hello World');
+})
+
+// requests will never reach this route
+app.get('/', function (req, res) {
+  res.send('Welcome');
+})
+path can be a string representing a path, a path pattern, a regular expression to match paths, or an array of combinations thereof.
+
+The middleware in the below are simple examples.
+Type	Example
+Path	
+// will match paths starting with /abcd
+app.use('/abcd', function (req, res, next) {
+  next();
+})
+Path Pattern	
+// will match paths starting with /abcd and /abd
+app.use('/abc?d', function (req, res, next) {
+  next();
+})
+
+// will match paths starting with /abcd, /abbcd, /abbbbbcd and so on
+app.use('/ab+cd', function (req, res, next) {
+  next();
+})
+
+// will match paths starting with /abcd, /abxcd, /abFOOcd, /abbArcd and so on
+app.use('/ab\*cd', function (req, res, next) {
+  next();
+})
+
+
 app.get('/user/:id', function (req, res, next) {
   console.log('although this matches');
   next();
