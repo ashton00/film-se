@@ -1301,3 +1301,200 @@ res.send('<p>some html</p>');
 res.status(404).send('Sorry, we cannot find that!');
 res.status(500).send({ error: 'something blew up' });
 This method performs many useful tasks for simple non-streaming responses: For example, it automatically assigns the Content-Length HTTP response header field (unless previously defined) and provides automatic HEAD and HTTP cache freshness support.
+
+When the parameter is a Buffer object, the method sets the Content-Type response header field to ¡°application/octet-stream¡±, unless previously defined as shown below:
+
+res.set('Content-Type', 'text/html');
+res.send(new Buffer('<p>some html</p>'));
+When the parameter is a String, the method sets the Content-Type to ¡°text/html¡±:
+
+res.send('<p>some html</p>');
+When the parameter is an Array or Object, Express responds with the JSON representation:
+
+res.send({ user: 'tobi' });
+res.send([1,2,3]);
+res.sendFile(path [, options] [, fn])
+res.sendFile() is supported from Express v4.8.0 onwards
+Transfers the file at the given path. Sets the Content-Type response HTTP header field based on the filename¡¯s extension. Unless the root option is set in the options object, path must be an absolute path of the file.
+
+The details of the options object is listed in the following table.
+
+Property	Description	Default	Availability
+maxAge	Sets the max-age property of the Cache-Control header in milliseconds or a string in ms format	0	 
+root	Root directory for relative filenames.	 	 
+lastModified	Sets the Last-Modified header to the last modified date of the file on the OS. Set false to disable it.	Enabled	4.9.0+
+headers	Object containing HTTP headers to serve with the file.	 	 
+dotfiles	Option for serving dotfiles. Possible values are ¡°allow¡±, ¡°deny¡±, ¡°ignore¡±.	¡°ignore¡±	 
+The method invokes the callback function fn(err) when the transfer is complete or when an error occurs. If the callback function is specified and an error occurs, the callback function must explicitly handle the response process either by ending the request-response cycle, or by passing control to the next route.
+
+Here is an example of using res.sendFile with all its arguments.
+
+app.get('/file/:name', function (req, res, next) {
+
+  var options = {
+    root: __dirname + '/public/',
+    dotfiles: 'deny',
+    headers: {
+        'x-timestamp': Date.now(),
+        'x-sent': true
+    }
+  };
+
+  var fileName = req.params.name;
+  res.sendFile(fileName, options, function (err) {
+    if (err) {
+      console.log(err);
+      res.status(err.status).end();
+    }
+    else {
+      console.log('Sent:', fileName);
+    }
+  });
+
+})
+res.sendFile provides fine-grained support for file serving as illustrated in the following example:
+
+app.get('/user/:uid/photos/:file', function(req, res){
+  var uid = req.params.uid
+    , file = req.params.file;
+
+  req.user.mayViewFilesFrom(uid, function(yes){
+    if (yes) {
+      res.sendFile('/uploads/' + uid + '/' + file);
+    } else {
+      res.status(403).send('Sorry! you cant see that.');
+    }
+  });
+});
+For more information, or if you have issues or concerns, see send.
+
+res.sendStatus(statusCode)
+Set the response HTTP status code to statusCode and send its string representation as the response body.
+
+res.sendStatus(200); // equivalent to res.status(200).send('OK')
+res.sendStatus(403); // equivalent to res.status(403).send('Forbidden')
+res.sendStatus(404); // equivalent to res.status(404).send('Not Found')
+res.sendStatus(500); // equivalent to res.status(500).send('Internal Server Error')
+If an unsupported status code is specified, the HTTP status is still set to statusCode and the string version of the code is sent as the response body.
+
+res.sendStatus(2000); // equivalent to res.status(2000).send('2000')
+More about HTTP Status Codes
+
+res.set(field [, value])
+Sets the response¡¯s HTTP header field to value. To set multiple fields at once, pass an object as the parameter.
+
+res.set('Content-Type', 'text/plain');
+
+res.set({
+  'Content-Type': 'text/plain',
+  'Content-Length': '123',
+  'ETag': '12345'
+})
+Aliased as res.header(field [, value]).
+
+res.status(code)
+Use this method to set the HTTP status for the response. It is a chainable alias of Node¡¯s response.statusCode.
+
+res.status(403).end();
+res.status(400).send('Bad Request');
+res.status(404).sendFile('/absolute/path/to/404.png');
+res.type(type)
+Sets the Content-Type HTTP header to the MIME type as determined by mime.lookup() for the specified type. If type contains the ¡°/¡± character, then it sets the Content-Type to type.
+
+res.type('.html');              // => 'text/html'
+res.type('html');               // => 'text/html'
+res.type('json');               // => 'application/json'
+res.type('application/json');   // => 'application/json'
+res.type('png');                // => image/png:
+res.vary(field)
+Adds the field to the Vary response header, if it is not there already.
+
+res.vary('User-Agent').render('docs');
+
+Router
+
+A router object is an isolated instance of middleware and routes. You can think of it as a ¡°mini-application,¡± capable only of performing middleware and routing functions. Every Express application has a built-in app router.
+
+A router behaves like middleware itself, so you can use it as an argument to app.use() or as the argument to another router¡¯s use() method.
+
+The top-level express object has a Router() function that creates a new router object.
+
+Router([options])
+Create a new router as follows:
+
+var router = express.Router([options]);
+The optional options parameter specifies the behavior of the router.
+
+Property	Description	Default	Availability
+caseSensitive	Enable case sensitivity.	Disabled by default, treating ¡°/Foo¡± and ¡°/foo¡± as the same.	 
+mergeParams	Preserve the req.params values from the parent router. If the parent and the child have conflicting param names, the child¡¯s value take precedence.	false	4.5.0+
+strict	Enable strict routing.	Disabled by default, ¡°/foo¡± and ¡°/foo/¡± are treated the same by the router.	 
+You can add middleware and HTTP method routes (such as get, put, post, and so on) to router just like an application.
+
+// invoked for any requests passed to this router
+router.use(function(req, res, next) {
+  // .. some logic here .. like any other middleware
+  next();
+});
+
+// will handle any request that ends in /events
+// depends on where the router is "use()'d"
+router.get('/events', function(req, res, next) {
+  // ..
+});
+You can then use a router for a particular root URL in this way separating your routes into files or even mini-apps.
+
+// only requests to /calendar/* will be sent to our "router"
+app.use('/calendar', router);
+Methods
+router.all(path, [callback, ...] callback)
+This method functions just like the router.METHOD() methods, except that it matches all HTTP verbs.
+
+This method is extremely useful for mapping ¡°global¡± logic for specific path prefixes or arbitrary matches. For example, if you placed the following route at the top of all other route definitions, it would require that all routes from that point on would require authentication, and automatically load a user. Keep in mind that these callbacks do not have to act as end points; loadUser can perform a task, then call next() to continue matching subsequent routes.
+
+router.all('*', requireAuthentication, loadUser);
+Or the equivalent:
+
+router.all('*', requireAuthentication)
+router.all('*', loadUser);
+Another example of this is white-listed ¡°global¡± functionality. Here the example is much like before, but it only restricts paths prefixed with ¡°/api¡±:
+
+router.all('/api/*', requireAuthentication);
+router.METHOD(path, [callback, ...] callback)
+The router.METHOD() methods provide the routing functionality in Express, where METHOD is one of the HTTP methods, such as GET, PUT, POST, and so on, in lowercase. Thus, the actual methods are router.get(), router.post(), router.put(), and so on.
+
+You can provide multiple callbacks, and all are treated equally, and behave just like middleware, except that these callbacks may invoke next('route') to bypass the remaining route callback(s). You can use this mechanism to perform pre-conditions on a route then pass control to subsequent routes when there is no reason to proceed with the route matched.
+
+The following snippet illustrates the most simple route definition possible. Express translates the path strings to regular expressions, used internally to match incoming requests. Query strings are not considered when performing these matches, for example ¡°GET /¡± would match the following route, as would ¡°GET /?name=tobi¡±.
+
+router.get('/', function(req, res){
+  res.send('hello world');
+});
+You can also use regular expressions¡ªuseful if you have very specific constraints, for example the following would match ¡°GET /commits/71dbb9c¡± as well as ¡°GET /commits/71dbb9c..4c084f9¡±.
+
+router.get(/^\/commits\/(\w+)(?:\.\.(\w+))?$/, function(req, res){
+  var from = req.params[0];
+  var to = req.params[1] || 'HEAD';
+  res.send('commit range ' + from + '..' + to);
+});
+router.param([name,] callback)
+Add callback triggers to route parameters, where name is the name of the parameter or an array of them, and function is the callback function. The parameters of the callback function are the request object, the response object, the next middleware, and the value of the parameter, in that order.
+
+If name is an array, the callback trigger is registered for each parameter declared in it, in the order in which they are declared. Furthermore, for each declared parameter except the last one, a call to next inside the callback will call the callback for the next declared parameter. For the last parameter, a call to next will call the next middleware in place for the route currently being processed, just like it would if name were just a string.
+
+For example, when :user is present in a route path, you may map user loading logic to automatically provide req.user to the route, or perform validations on the parameter input.
+
+router.param('user', function(req, res, next, id) {
+
+  // try to get the user details from the User model and attach it to the request object
+  User.find(id, function(err, user) {
+    if (err) {
+      next(err);
+    } else if (user) {
+      req.user = user;
+      next();
+    } else {
+      next(new Error('failed to load user'));
+    }
+  });
+});
