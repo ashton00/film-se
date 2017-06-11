@@ -2,7 +2,7 @@ var request = require('superagent');
 var expect = require('expect.js');
 
 var port = 3333;
-describe('be_index', function(){
+describe('back_end_film', function(){
   it('should respond to GET',function(){
     require
       .get('http://localhost:'+port)
