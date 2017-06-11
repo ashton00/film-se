@@ -80,3 +80,64 @@ It is similar to the baseUrl property of the req object, except req.baseUrl retu
 If a sub-app is mounted on multiple path patterns, app.mountpath returns the list of patterns it is mounted on, as shown in the following example.
 
 var admin = express();
+
+admin.get('/', function (req, res) {
+  console.log(admin.mountpath); // [ '/adm*n', '/manager' ]
+  res.send('Admin Homepage');
+})
+
+var secret = express();
+secret.get('/', function (req, res) {
+  console.log(secret.mountpath); // /secr*t
+  res.send('Admin Secret');
+});
+
+admin.use('/secr*t', secret); // load the 'secret' router on '/secr*t', on the 'admin' sub app
+app.use(['/adm*n', '/manager'], admin); // load the 'admin' router on '/adm*n' and '/manager', on the parent app
+Events
+app.on('mount', callback(parent))
+The mount event is fired on a sub-app, when it is mounted on a parent app. The parent app is passed to the callback function.
+
+var admin = express();
+
+admin.on('mount', function (parent) {
+  console.log('Admin Mounted');
+  console.log(parent); // refers to the parent app
+});
+
+admin.get('/', function (req, res) {
+  res.send('Admin Homepage');
+});
+
+app.use('/admin', admin);
+Methods
+app.all(path, callback [, callback ...])
+This method is like the standard app.METHOD() methods, except it matches all HTTP verbs.
+
+It¡¯s useful for mapping ¡°global¡± logic for specific path prefixes or arbitrary matches. For example, if you put the following at the top of all other route definitions, it requires that all routes from that point on require authentication, and automatically load a user. Keep in mind that these callbacks do not have to act as end-points: loadUser can perform a task, then call next() to continue matching subsequent routes.
+
+app.all('*', requireAuthentication, loadUser);
+Or the equivalent:
+
+app.all('*', requireAuthentication)
+app.all('*', loadUser);
+Another example is white-listed ¡°global¡± functionality. The example is much like before, however it only restricts paths that start with ¡°/api¡±:
+
+app.all('/api/*', requireAuthentication);
+app.delete(path, callback [, callback ...])
+Routes HTTP DELETE requests to the specified path with the specified callback functions. For more information, see the routing guide.
+
+You can provide multiple callback functions that behave just like middleware, except these callbacks can invoke next('route') to bypass the remaining route callback(s). You can use this mechanism to impose pre-conditions on a route, then pass control to subsequent routes if there¡¯s no reason to proceed with the current route.
+
+app.delete('/', function (req, res) {
+  res.send('DELETE request to homepage');
+});
+app.disable(name)
+Sets the Boolean setting name to false, where name is one of the properties from the app settings table. Calling app.set('foo', false) for a Boolean property is the same as calling app.disable('foo').
+
+For example:
+
+app.disable('trust proxy');
+app.get('trust proxy');
+// => false
+app.disabled(name)
