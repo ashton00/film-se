@@ -179,3 +179,36 @@ app.engine('html', require('ejs').renderFile);
 In this case, EJS provides a .renderFile() method with the same signature that Express expects: (path, options, callback), though note that it aliases this method as ejs.__express internally so if you¡¯re using ¡°.ejs¡± extensions you don¡¯t need to do anything.
 
 Some template engines do not follow this convention. The consolidate.js library maps Node template engines to follow this convention, so they work seemlessly with Express.
+
+var engines = require('consolidate');
+app.engine('haml', engines.haml);
+app.engine('html', engines.hogan);
+app.get(name)
+Returns the value of name app setting, where name is one of strings in the app settings table. For example:
+
+app.get('title');
+// => undefined
+
+app.set('title', 'My Site');
+app.get('title');
+// => "My Site"
+app.get(path, callback [, callback ...])
+Routes HTTP GET requests to the specified path with the specified callback functions. For more information, see the routing guide.
+
+You can provide multiple callback functions that behave just like middleware, except these callbacks can invoke next('route') to bypass the remaining route callback(s). You can use this mechanism to impose pre-conditions on a route, then pass control to subsequent routes if there¡¯s no reason to proceed with the current route.
+
+app.get('/', function (req, res) {
+  res.send('GET request to homepage');
+});
+app.listen(port, [hostname], [backlog], [callback])
+Binds and listens for connections on the specified host and port. This method is identical to Node¡¯s http.Server.listen().
+
+var express = require('express');
+var app = express();
+app.listen(3000);
+The app returned by express() is in fact a JavaScript Function, designed to be passed to Node¡¯s HTTP servers as a callback to handle requests. This makes it easy to provide both HTTP and HTTPS versions of your app with the same code base, as the app does not inherit from these (it is simply a callback):
+
+var express = require('express');
+var https = require('https');
+var http = require('http');
+var app = express();
