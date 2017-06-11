@@ -1063,3 +1063,241 @@ app.get('/', function (req, res) {
 })
 res.locals
 An object that contains response local variables scoped to the request, and therefore available only to the view(s) rendered during that request / response cycle (if any). Otherwise, this property is identical to app.locals.
+
+This property is useful for exposing request-level information such as the request path name, authenticated user, user settings, and so on.
+
+app.use(function(req, res, next){
+  res.locals.user = req.user;
+  res.locals.authenticated = ! req.user.anonymous;
+  next();
+});
+Methods
+res.append(field [, value])
+res.append() is supported by Express v4.11.0+
+Appends the specified value to the HTTP response header field. If the header is not already set, it creates the header with the specified value. The value parameter can be a string or an array.
+
+Note: calling res.set() after res.append() will reset the previously-set header value.
+
+res.append('Link', ['<http://localhost/>', '<http://localhost:3000/>']);
+res.append('Set-Cookie', 'foo=bar; Path=/; HttpOnly');
+res.append('Warning', '199 Miscellaneous warning');
+res.attachment([filename])
+Sets the HTTP response Content-Disposition header field to ¡°attachment¡±. If a filename is given, then it sets the Content-Type based on the extension name via res.type(), and sets the Content-Disposition ¡°filename=¡± parameter.
+
+res.attachment();
+// Content-Disposition: attachment
+
+res.attachment('path/to/logo.png');
+// Content-Disposition: attachment; filename="logo.png"
+// Content-Type: image/png
+res.cookie(name, value [, options])
+Sets cookie name to value. The value parameter may be a string or object converted to JSON.
+
+The options parameter is an object that can have the following properties.
+
+Property	Type	Description
+domain	String	Domain name for the cookie. Defaults to the domain name of the app.
+expires	Date	Expiry date of the cookie in GMT. If not specified or set to 0, creates a session cookie.
+httpOnly	Boolean	Flags the cookie to be accessible only by the web server.
+maxAge	String	Convenient option for setting the expiry time relative to the current time in milliseconds.
+path	String	Path for the cookie. Defaults to ¡°/¡±.
+secure	Boolean	Marks the cookie to be used with HTTPS only.
+signed	Boolean	Indicates if the cookie should be signed.
+All res.cookie() does is set the HTTP Set-Cookie header with the options provided. Any option not specified defaults to the value stated in RFC 6265.
+For example:
+
+res.cookie('name', 'tobi', { domain: '.example.com', path: '/admin', secure: true });
+res.cookie('rememberme', '1', { expires: new Date(Date.now() + 900000), httpOnly: true });
+The maxAge option is a convenience option for setting ¡°expires¡± relative to the current time in milliseconds. The following is equivalent to the second example above.
+
+res.cookie('rememberme', '1', { maxAge: 900000, httpOnly: true })
+You can pass an object as the value parameter; it is then serialized as JSON and parsed by bodyParser() middleware.
+
+res.cookie('cart', { items: [1,2,3] });
+res.cookie('cart', { items: [1,2,3] }, { maxAge: 900000 });
+When using cookie-parser middleware, this method also supports signed cookies. Simply include the signed option set to true. Then res.cookie() will use the secret passed to cookieParser(secret) to sign the value.
+
+res.cookie('name', 'tobi', { signed: true });
+Later you may access this value through the req.signedCookie object.
+
+res.clearCookie(name [, options])
+Clears the cookie specified by name. For details about the options object, see res.cookie().
+
+res.cookie('name', 'tobi', { path: '/admin' });
+res.clearCookie('name', { path: '/admin' });
+res.download(path [, filename] [, fn])
+Transfers the file at path as an ¡°attachment¡±. Typically, browsers will prompt the user for download. By default, the Content-Disposition header ¡°filename=¡± parameter is path (this typically appears in the brower dialog). Override this default with the filename parameter.
+
+When an error ocurrs or transfer is complete, the method calls the optional callback function fn. This method uses res.sendFile() to transfer the file.
+
+res.download('/report-12345.pdf');
+
+res.download('/report-12345.pdf', 'report.pdf');
+
+res.download('/report-12345.pdf', 'report.pdf', function(err){
+  if (err) {
+    // Handle error, but keep in mind the response may be partially-sent
+    // so check res.headersSent
+  } else {
+    // decrement a download credit, etc.
+  }
+});
+res.end([data] [, encoding])
+Ends the response process. This method actually comes from Node core, specifically the response.end() method of http.ServerResponse.
+
+Use to quickly end the response without any data. If you need to respond with data, instead use methods such as res.send() and res.json().
+
+res.end();
+res.status(404).end();
+res.format(object)
+Performs content-negotiation on the Accept HTTP header on the request object, when present. It uses req.accepts() to select a handler for the request, based on the acceptable types ordered by their quality values. If the header is not specified, the first callback is invoked. When no match is found, the server responds with 406 ¡°Not Acceptable¡±, or invokes the default callback.
+
+The Content-Type response header is set when a callback is selected. However, you may alter this within the callback using methods such as res.set() or res.type().
+
+The following example would respond with { "message": "hey" } when the Accept header field is set to ¡°application/json¡± or ¡°*/json¡± (however if it is ¡°*/*¡±, then the response will be ¡°hey¡±).
+
+res.format({
+  'text/plain': function(){
+    res.send('hey');
+  },
+
+  'text/html': function(){
+    res.send('<p>hey</p>');
+  },
+
+  'application/json': function(){
+    res.send({ message: 'hey' });
+  },
+
+  'default': function() {
+    // log the request and respond with 406
+    res.status(406).send('Not Acceptable');
+  }
+});
+In addition to canonicalized MIME types, you may also use extension names mapped to these types for a slightly less verbose implementation:
+
+res.format({
+  text: function(){
+    res.send('hey');
+  },
+
+  html: function(){
+    res.send('<p>hey</p>');
+  },
+
+  json: function(){
+    res.send({ message: 'hey' });
+  }
+});
+res.get(field)
+Returns the HTTP response header specified by field. The match is case-insensitive.
+
+res.get('Content-Type');
+// => "text/plain"
+res.json([body])
+Sends a JSON response. This method is identical to res.send() with an object or array as the parameter. However, you can use it to convert other values to JSON, such as null, and undefined. (although these are technically not valid JSON).
+
+res.json(null)
+res.json({ user: 'tobi' })
+res.status(500).json({ error: 'message' })
+res.jsonp([body])
+Sends a JSON response with JSONP support. This method is identical to res.json(), except that it opts-in to JSONP callback support.
+
+res.jsonp(null)
+// => null
+
+res.jsonp({ user: 'tobi' })
+// => { "user": "tobi" }
+
+res.status(500).jsonp({ error: 'message' })
+// => { "error": "message" }
+By default, the JSONP callback name is simply callback. Override this with the jsonp callback name setting.
+
+The following are some examples of JSONP responses using the same code:
+
+// ?callback=foo
+res.jsonp({ user: 'tobi' })
+// => foo({ "user": "tobi" })
+
+app.set('jsonp callback name', 'cb');
+
+// ?cb=foo
+res.status(500).jsonp({ error: 'message' })
+// => foo({ "error": "message" })
+res.links(links)
+Joins the links provided as properties of the parameter to populate the response¡¯s Link HTTP header field.
+
+res.links({
+  next: 'http://api.example.com/users?page=2',
+  last: 'http://api.example.com/users?page=5'
+});
+yields:
+
+Link: <http://api.example.com/users?page=2>; rel="next", 
+      <http://api.example.com/users?page=5>; rel="last"
+res.location(path)
+Sets the response Location HTTP header to the specified path parameter.
+
+res.location('/foo/bar');
+res.location('http://example.com');
+res.location('back');
+A path value of ¡°back¡± has a special meaning, it refers to the URL specified in the Referer header of the request. If the Referer header was not specified, it refers to ¡°/¡±.
+
+Express passes the specified URL string as-is to the browser in the Location header, without any validation or manipulation, except in case of back.
+
+Browsers take the responsibility of deriving the intended URL from the current URL or the referring URL, and the URL specified in the Location header; and redirect the user accordingly.
+res.redirect([status,] path)
+Redirects to the URL dervied from the specified path, with specified HTTP status code status. If you don¡¯t specify status, the status code defaults to ¡°302 ¡°Found¡±.
+
+res.redirect('/foo/bar');
+res.redirect('http://example.com');
+res.redirect(301, 'http://example.com');
+res.redirect('../login');
+Redirects can be a fully-qualified URL for redirecting to a different site:
+
+res.redirect('http://google.com');
+Redirects can be relative to the root of the host name. For example, if the application is on http://example.com/admin/post/new, the following would redirect to the URL http://example.com/admin:
+
+res.redirect('/admin');
+Redirects can be relative to the current URL. For example, from http://example.com/blog/admin/ (notice the trailing slash), the following would redirect to the URL http://example.com/blog/admin/post/new.
+
+res.redirect('post/new');
+Redirecting to post/new from http://example.com/blog/admin (no trailing slash), will redirect to http://example.com/blog/post/new.
+
+If you found the above behavior confusing, think of path segments as directories (with trailing slashes) and files, it will start to make sense.
+
+Path-relative redirects are also possible. If you were on http://example.com/admin/post/new, the following would redirect to http//example.com/admin/post:
+
+res.redirect('..');
+A back redirection redirects the request back to the referer, defaulting to / when the referer is missing.
+
+res.redirect('back');    
+res.render(view [, locals] [, callback])
+Renders a view and sends the rendered HTML string to the client. Optional parameters:
+
+locals, an object whose properties define local variables for the view.
+callback, a callback function. If provided, the method returns both the possible error and rendered string, but does not perform an automated response. When an error occurs, the method invokes next(err) internally.
+The local variable cache enables view caching. Set it to true, to cache the view during development; view caching is enabled in production by default.
+// send the rendered view to the client
+res.render('index');
+
+// if a callback is specified, the rendered HTML string has to be sent explicitly
+res.render('index', function(err, html) {
+  res.send(html);
+});
+
+// pass a local variable to the view
+res.render('user', { name: 'Tobi' }, function(err, html) {
+  // ...
+});
+res.send([body])
+Sends the HTTP response.
+
+The body parameter can be a Buffer object, a String, an object, or an Array. For example:
+
+res.send(new Buffer('whoop'));
+res.send({ some: 'json' });
+res.send('<p>some html</p>');
+res.status(404).send('Sorry, we cannot find that!');
+res.status(500).send({ error: 'something blew up' });
+This method performs many useful tasks for simple non-streaming responses: For example, it automatically assigns the Content-Length HTTP response header field (unless previously defined) and provides automatic HEAD and HTTP cache freshness support.
