@@ -5,7 +5,6 @@ const mysql = require('mysql');
 const crypto = require('crypto');
 
 var connection = mysql.createConnection(config.mysql);
-
 /**
  * [dbQuery db查询操作]
  * @param    sql    [查询语句]
